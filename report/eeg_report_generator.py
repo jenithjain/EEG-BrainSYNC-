@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import os
-from fpdf import FPDF2 as FPDF
+from fpdf import FPDF
 
 class EEGReportGenerator:
     def __init__(self):
@@ -11,103 +11,88 @@ class EEGReportGenerator:
                         'C4', 'T4', 'T5', 'P3', 'Pz', 'P4', 'T6', 'O1', 'O2']
         
     def generate_pdf_report(self, patient_info, eeg_data, output_dir="d:/NeuroGPT/data/reports"):
-        pdf = FPDF()
+        pdf = FPDF(orientation='landscape')  # Use landscape for wider tables
         pdf.add_page()
         
-        # Header with border
-        pdf.set_fill_color(240, 240, 240)
+        # Set page margins
+        pdf.set_margins(10, 10, 10)
+        
+        # Header
         pdf.set_font('Arial', 'B', 16)
         pdf.cell(0, 15, 'EEG Examination Report', 1, 1, 'C', True)
-        pdf.ln(10)
+        pdf.ln(5)
         
-        # Patient Information in a table
+        # Patient Information
         pdf.set_font('Arial', 'B', 14)
         pdf.cell(0, 10, 'Patient Information', 0, 1)
         pdf.set_font('Arial', '', 12)
-        pdf.set_fill_color(245, 245, 245)
         
-        # Create info table
+        # Info table with adjusted widths
         for key, value in patient_info.items():
-            pdf.cell(40, 8, key.upper() + ":", 1, 0, 'L', True)
-            pdf.cell(0, 8, str(value), 1, 1, 'L')
-        pdf.ln(10)
+            pdf.cell(60, 8, key.upper() + ":", 1, 0, 'L', True)
+            pdf.cell(100, 8, str(value), 1, 1, 'L')
+        pdf.ln(5)
         
         # EEG Data Section
         pdf.set_font('Arial', 'B', 14)
         pdf.cell(0, 10, 'EEG Measurements', 0, 1)
         
-        # Channel mapping table
+        # Channel mapping
         pdf.set_font('Arial', 'B', 12)
         pdf.cell(0, 8, 'Channel Mapping:', 0, 1)
         pdf.set_font('Arial', '', 10)
         
-        # Print channels in a grid
+        # Channels in a grid
         channels_per_row = 5
+        cell_width = 38
         for i in range(0, len(self.channels), channels_per_row):
             channel_group = self.channels[i:i+channels_per_row]
             for ch in channel_group:
-                pdf.cell(38, 8, ch, 1, 0, 'C', True)
+                pdf.cell(cell_width, 8, ch, 1, 0, 'C', True)
             pdf.ln()
         pdf.ln(5)
         
-        # Frequency Band Data in tables
+        # Frequency Band Data
         pdf.set_font('Arial', 'B', 12)
-        # Change the import
-        from fpdf import FPDF2 as FPDF
-        
-        # In generate_pdf_report method, change μV² to uV^2:
         for band in ['delta', 'theta', 'alpha', 'beta', 'highbeta', 'gamma']:
             values = eeg_data[band]
             pdf.cell(0, 8, f"{band.upper()} Band Values (uV^2):", 0, 1)
             
-            # Create table header
+            # Table headers
             pdf.set_font('Arial', 'B', 10)
-            for i in range(5):
-                pdf.cell(38, 8, 'Channel', 1, 0, 'C', True)
-                pdf.cell(38, 8, 'Value', 1, 0, 'C', True)
-            pdf.ln()
+            header_width = 38
+            value_width = 38
+            headers_per_row = 5
             
-            # Fill data
-            pdf.set_font('Arial', '', 10)
-            row = []
-            for i, value in enumerate(values):
-                if i > 0 and i % 5 == 0:
-                    for item in row:
-                        pdf.cell(38, 8, item[0], 1, 0, 'C')
-                        pdf.cell(38, 8, f"{item[1]:.2f}", 1, 0, 'C')
-                    pdf.ln()
-                    row = []
-                row.append((self.channels[i], value))
-            
-            # Print remaining items
-            if row:
-                for item in row:
-                    pdf.cell(38, 8, item[0], 1, 0, 'C')
-                    pdf.cell(38, 8, f"{item[1]:.2f}", 1, 0, 'C')
+            # Create headers row by row
+            for i in range(0, len(self.channels), headers_per_row):
+                for j in range(headers_per_row):
+                    if i + j < len(self.channels):
+                        pdf.cell(header_width, 8, self.channels[i+j], 1, 0, 'C', True)
+                        pdf.cell(value_width, 8, f"{values[i+j]:.2f}", 1, 0, 'C')
                 pdf.ln()
             pdf.ln(5)
         
         # Technical Information
-        pdf.ln(5)
         pdf.set_font('Arial', 'B', 14)
         pdf.cell(0, 10, 'Technical Information', 0, 1)
         pdf.set_font('Arial', '', 12)
         pdf.cell(0, 8, 'Sampling Rate: 256 Hz', 0, 1)
         pdf.cell(0, 8, 'Recording Duration: 5 minutes', 0, 1)
         
-        # Footer with report ID
+        # Footer
         pdf.set_y(-30)
         pdf.set_font('Arial', 'I', 10)
         report_id = f"EEG_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         pdf.cell(0, 10, f'Report ID: {report_id}', 0, 1, 'L')
         
-        # Save both PDF and JSON
+        # Save files
         pdf_path = os.path.join(output_dir, f"{report_id}.pdf")
         json_path = os.path.join(output_dir, f"{report_id}.json")
         
         pdf.output(pdf_path)
         
-        # Save JSON with exact same structure as needed for ML
+        # Save JSON with same structure
         with open(json_path, 'w') as f:
             json.dump({
                 "report_id": report_id,
@@ -117,7 +102,8 @@ class EEGReportGenerator:
         
         return pdf_path, json_path
 
-def example_usage():
+if __name__ == "__main__":
+    # Test data
     patient_info = {
         "id": "P12345",
         "age": 35,
@@ -141,10 +127,6 @@ def example_usage():
     
     generator = EEGReportGenerator()
     pdf_path, json_path = generator.generate_pdf_report(patient_info, eeg_data)
-    
     print(f"Report generated successfully!")
     print(f"PDF saved to: {pdf_path}")
     print(f"Data saved to: {json_path}")
-
-if __name__ == "__main__":
-    example_usage()

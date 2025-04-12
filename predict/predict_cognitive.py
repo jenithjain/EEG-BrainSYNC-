@@ -12,6 +12,7 @@ script_path = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.dirname(script_path))
 
 from model.eeg_classifier import EEGCognitiveClassifier
+from visualize_eeg import create_eeg_visualization, save_visualizations
 
 def prepare_eeg_data(data):
     # Handle the complex EEG features from the BRMH dataset
@@ -28,14 +29,93 @@ def prepare_eeg_data(data):
     
     return torch.FloatTensor(data)
 
+# Add these imports at the top
+import matplotlib.pyplot as plt
+from mne.viz import plot_topomap
+from mne import create_info, pick_types
+from mne.channels import make_standard_montage
+import mne
+import seaborn as sns
+
+def create_brain_visualization(data, prediction, band_values):
+    plt.style.use('dark_background')
+    fig = plt.figure(figsize=(20, 12))
+    
+    # Create channel positions
+    montage = make_standard_montage('standard_1020')
+    ch_names = ['Fp1', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T3', 'C3', 'Cz', 
+                'C4', 'T4', 'T5', 'P3', 'Pz', 'P4', 'T6', 'O1', 'O2']
+    
+    info = create_info(ch_names=ch_names, sfreq=256., ch_types='eeg')
+    info.set_montage(montage)
+    pos = np.array([montage.get_positions()['ch_pos'][ch] for ch in ch_names])[:, :2]
+    
+    # Plot each frequency band
+    bands = ['delta', 'theta', 'alpha', 'beta', 'highbeta', 'gamma']
+    for idx, band in enumerate(bands, 1):
+        ax = fig.add_subplot(2, 4, idx)
+        data = band_values[band][:19]
+        
+        im = plot_topomap(data, pos, axes=ax, show=False,
+                         cmap='RdYlBu_r', 
+                         sensors=True,
+                         outlines='head',
+                         contours=10,
+                         image_interp='cubic')
+        
+        plt.colorbar(im[0], ax=ax)
+        ax.set_title(f'{band.capitalize()} Band\n({min(data):.1f}-{max(data):.1f} μV²)',
+                    color='white', pad=15)
+    
+    # Add power spectrum
+    ax_spectrum = fig.add_subplot(2, 4, 7)
+    mean_powers = [np.mean(band_values[band][:19]) for band in bands]
+    
+    bars = sns.barplot(x=bands, y=mean_powers, ax=ax_spectrum, 
+                      palette='RdYlBu_r', alpha=0.8)
+    ax_spectrum.set_title('Average Band Powers', color='white')
+    ax_spectrum.set_xticklabels(bands, rotation=45)
+    ax_spectrum.set_ylabel('Power (μV²)')
+    ax_spectrum.grid(True, alpha=0.2)
+    
+    # Add prediction info
+    ax_text = fig.add_subplot(2, 4, 8)
+    ax_text.text(0.5, 0.5, f'Predicted Condition:\n{prediction}', 
+                ha='center', va='center', fontsize=14,
+                color='white', weight='bold')
+    ax_text.axis('off')
+    
+    plt.tight_layout()
+    return fig
+
+def save_visualization(fig, output_path):
+    fig.savefig(output_path, dpi=300, bbox_inches='tight', facecolor='black')
+    plt.close(fig)
+
 def predict_disorders(model, data, label_encoder):
     model.eval()
     with torch.no_grad():
-        data = prepare_eeg_data(data)
-        outputs = model(data)
+        # Keep original data for visualization
+        tensor_data = prepare_eeg_data(data)
+        outputs = model(tensor_data)
         probabilities = F.softmax(outputs, dim=1)
         predictions = torch.argmax(outputs, dim=1)
         labels = label_encoder.inverse_transform(predictions.numpy())
+    
+    # Use DataFrame for band values extraction
+    band_values = {
+        'delta': np.array([data[col].values[0] for col in data.columns if 'delta' in col.lower()]),
+        'theta': np.array([data[col].values[0] for col in data.columns if 'theta' in col.lower()]),
+        'alpha': np.array([data[col].values[0] for col in data.columns if 'alpha' in col.lower()]),
+        'beta': np.array([data[col].values[0] for col in data.columns if 'beta' in col.lower()]),
+        'highbeta': np.array([data[col].values[0] for col in data.columns if 'highbeta' in col.lower()]),
+        'gamma': np.array([data[col].values[0] for col in data.columns if 'gamma' in col.lower()])
+    }
+    
+    # Create and save visualization
+    # Create visualization with the new function
+    fig = create_brain_visualization(data, labels[0], band_values)
+    save_visualization(fig, 'd:/NeuroGPT/outputs/eeg_analysis.png')
     
     return labels, probabilities.numpy()
 
@@ -265,3 +345,21 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error during prediction: {str(e)}")
         print("Please ensure the model is trained and saved correctly.")
+
+
+def generate():
+    # After getting predictions
+    band_values = {
+        'delta': eeg_data['delta'],
+        'theta': eeg_data['theta'],
+        'alpha': eeg_data['alpha'],
+        'beta': eeg_data['beta'],
+        'highbeta': eeg_data['highbeta'],
+        'gamma': eeg_data['gamma']
+    }
+    
+    # Create visualizations
+    create_eeg_visualization(eeg_data, prediction, band_values)
+    
+    # Save if needed
+    save_visualizations('eeg_analysis_results.png')

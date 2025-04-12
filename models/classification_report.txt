@@ -1,0 +1,13 @@
+                                    precision    recall  f1-score   support
+
+                Addictive disorder     0.2791    0.3243    0.3000        37
+                  Anxiety disorder     0.0741    0.0909    0.0816        22
+                   Healthy control     0.3810    0.4211    0.4000        19
+                     Mood disorder     0.3294    0.5283    0.4058        53
+     Obsessive compulsive disorder     0.0000    0.0000    0.0000         9
+                     Schizophrenia     0.0000    0.0000    0.0000        23
+Trauma and stress related disorder     0.3750    0.1154    0.1765        26
+
+                          accuracy                         0.2804       189
+                         macro avg     0.2055    0.2114    0.1948       189
+                      weighted avg     0.2455    0.2804    0.2465       189

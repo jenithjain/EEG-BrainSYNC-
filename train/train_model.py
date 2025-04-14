@@ -5,6 +5,12 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score, f1_score
 import numpy as np
 from preprocess import preprocess_data
+import os
+import sys
+
+# Add the directory containing the 'model' module to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 from model.eeg_classifier import EEGCognitiveClassifier
 
 def train_model(data_path, save_dir, n_folds=5):

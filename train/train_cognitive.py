@@ -236,6 +236,6 @@ def train_model(data_path, model_save_path):
 
 if __name__ == "__main__":
     # Example usage
-    data_path = "d:/NeuroGPT/inputs/EEG.machinelearing_data_BRMH.csv"
+    data_path = "d:/NeuroGPT/data/EEG.machinelearing_data_BRMH.csv"
     model_save_path = "d:/NeuroGPT/models/cognitive_model.pt"
     model, label_encoder = train_model(data_path, model_save_path)

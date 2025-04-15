@@ -19,7 +19,7 @@ Cognitive disorders often remain undiagnosed until they manifest as serious beha
 
 ## 📊 Dataset Used
 
-- **Source**: `EEG.machinelearing_data_BRMH.csv`
+- **Source**: [EEG.machinelearing_data_BRMH.csv](https://github.com/user-attachments/files/19758673/EEG.machinelearing_data_BRMH.csv)
 - **Contents**: EEG feature dataset with band powers, coherence measures, and associated labels
 - **Columns Include**:
   - **EEG Channels**: Band powers (delta, theta, alpha, beta, gamma) per channel

@@ -6,3 +6,7 @@ __pycache__/
 .vscode/
 *.pt
 data/
+venv.zip
+outputs/
+models/*.png
+models/*.txt
